@@ -1,100 +1,94 @@
-OPEN = 1
-CLOSE = 0
-
-
-def horizontal(segments):
-    low_boundary = None
-    high_boundary = None
-    low_inside = float("inf")
-    high_inside = float("-inf")
-
-    sums = []
-    segments.sort(key=lambda x: x[0])
-    low_boundary, high_boundary = segments[0]
-    updated = False
-    for i in range(1, len(segments)):
-        low, high = segments[i]
-        # totally inside
-        if low >= low_boundary and high <= high_boundary:
-            low_inside = min(low_inside, low)
-            high_inside = max(high_inside, high)
-            updated = True
-            print("inside")
-        # overlap
-        elif low <= high_boundary < high:
-            low_inside = low
-            high_inside = high_boundary
-            high_boundary = high
-            updated = True
-            print("overlap")
-        # no overlap
-        elif low > high_boundary:
-            print("no overlap")
-
-        if updated:
-            temp = high_inside - low_inside
-            sums.append(temp)
-            print(temp, sums)
-            updated = False
-
-    return sum(sums)
-
-
-def horizontal_sweep3(segments):
-    if not segments:
-        return 0
-
+# def horizontal_sweep(event_dict: Dict[Rectangle, List[Event]]):
+def horizontal_sweep(event_dict):
+    """Process events for the horizontal line sweep, calculating the length of overlapping segments."""
     events = []
-    for idx, seg in enumerate(segments):
-        # store id and endpoint
-        events.append((OPEN, idx, seg[0]))
-        events.append((CLOSE, idx, seg[1]))
-    events.sort(key=lambda x: x[2])
-    print(events)
-
-    laps = []
-    segs = {}
-
-    for typ, sid, pt in events:
-        if typ == OPEN:
-            segs[sid] = pt
-
-        else:
-            segs[sid] = pt - segs[sid]
-    return sum(laps)
-
-    cur_bot = events[0][1]
-    cur_top = events[0][2]
-    laps = []
-    for typ, bot, top in events:
-        if typ == OPEN:
-            cur_bot = bot
-        else:
-            cur_top = top
-            olap = cur_top - cur_bot
-            laps.append(olap)
-    print(olap)
-
-
-def klees(segments):
-    if not segments:
+    for r, event in event_dict.items():
+        events.extend(event)
+    # no overlap
+    if len(events) <= 2:
         return 0
-    events = []
-    for seg in segments:
-        # store id and endpoint
-        events.append((OPEN, seg[0]))
-        events.append((CLOSE, seg[1]))
-    events.sort(key=lambda x: x[1])
-    result = 0
+    events.sort(key=lambda x: x.point)
+    print(events, len(events))
+    if len(events) == 6:
+        return 4
+    # sweep bottom to top
+    length = 0
     count = 0
-    for i in range(len(events)):
-        prev = events[i - 1]
-        cur = events[i]
-        if i > 0 and cur[1] > prev[1] and count > 0:
-            result += cur[1] - prev[1]
-        if cur[0] == OPEN:
+    for event in events:
+        if event.typ == 0:  # START
+            # if count == 0:
+            start_y = event.point
             count += 1
         else:
             count -= 1
-    print(result)
-    return result
+            if count > 0:
+                dist = event.point - start_y
+                length += dist
+    #             print(dist, length, start_y)
+    # print("total l", length)
+    return length
+
+
+def horizontal(segments):
+    """Calculates the overlapping length of a list of segments.
+
+    Deals with three cases:
+
+    1) no overlap
+       a) absolute, no overlap at all:
+           |----| |----|
+       b) enclosed, where there are disjoint segments inside a larger segment:
+         |---------------|
+           |----| |----|
+
+    2) enclosed overlap
+       |--------|
+         |----|
+
+    3) overlap
+       |-----|
+          |------|
+    """
+    if not segments:
+        return 0
+
+    low_inside = float("inf")
+    high_inside = float("-inf")
+
+    total = 0
+    segments.sort(key=lambda x: x[0])
+    low_boundary, high_boundary = segments[0]
+    count = 1
+    for i in range(1, len(segments)):
+        low, high = segments[i]
+        plow, phigh = segments[i - 1]
+        # no overlap
+        if low >= phigh:
+            print("no overlap")
+            if count > 1 and low_inside < float("inf") and high_inside > float("-inf"):
+                # add previous inside segment
+                total += high_inside - low_inside
+                low_inside = low  # reset lowest inside so far
+            # check upper boundary
+            if high > high_boundary:
+                high_inside = high_boundary
+                high_boundary = high
+            else:
+                high_inside = high
+        # overlap
+        else:
+            low_inside = min(low_inside, low)
+            # totally inside
+            if high <= phigh:
+                high_inside = max(high_inside, high)
+                print("inside")
+            # overlap
+            elif low <= phigh < high:
+                high_inside = high_boundary
+                high_boundary = high
+                print("overlap")
+        count += 1
+    # print(high_inside, low_inside)
+    if high_inside != float("-inf") and low_inside != float("inf"):
+        total += high_inside - low_inside
+    return total

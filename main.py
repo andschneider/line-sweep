@@ -1,3 +1,4 @@
+from horizontal import horizontal_sweep, horizontal
 from primitives import Rectangle, tuple_to_rect
 from typing import List, Tuple
 from dataclasses import dataclass
@@ -10,12 +11,13 @@ def build_rectangles(rects):
 
 OPEN, CLOSE = 0, 1
 START, END = 0, 1
+VERT, HORZ = 0, 1
 
 
 @dataclass
 class Event2:
     typ: int  # OPEN or CLOSE
-    point: int
+    dir: int  # VERT or HORZ
     rec: Rectangle
 
     def __repr__(self):
@@ -23,7 +25,7 @@ class Event2:
             t = "open"
         else:
             t = "close"
-        return f"typ: {t}, pt: {self.rec}, rec: {self.rec}"
+        return f"typ: {t}, pt: {self.dir}, rec: {self.rec}"
 
 
 @dataclass
@@ -37,14 +39,19 @@ class Event:
             t = "open"
         else:
             t = "close"
-        return f"typ: {t}, pt: {self.rec}, rec: {self.rec}"
+        return f"typ: {t}, pt: {self.point}"
+        # return f"typ: {t}, pt: {self.point}, rec: {self.rec}"
 
 
-def build_events(rects):
+def build_events(rects, horizontal=False):
     events = []
     for r in rects:
-        events.append(Event(OPEN, r.c1.x, r))
-        events.append(Event(CLOSE, r.c2.x, r))
+        if horizontal:
+            events.append(Event(START, r.c1.y, r))
+            events.append(Event(END, r.c2.y, r))
+        else:
+            events.append(Event(START, r.c1.x, r))
+            events.append(Event(END, r.c2.x, r))
     # sort by point
     events.sort(key=lambda x: x.point)
     return events
@@ -140,48 +147,42 @@ if __name__ == "__main__":
     for rect in rects:
         print(rect)
 
+    # vertical edges
     e = build_events(rects)
+    # for ee in e:
+    #     print(ee)
+    # horizontal edges
+    # eh = build_events(rects, horizontal=True)
+    # for ee in eh:
+    #     print(ee)
 
     area = 0
     segments = []
+    horz_events = {}
+    # get first x coordinate
     prev_x = e[0].point
-    height = 0
+    intersect_height = 0
     # sweep left to right
-    count = 0
     for event in e:
         length = event.point - prev_x
-        area += length * height
+        area += length * intersect_height
+        rectangle = event.rec
         if event.typ == OPEN:
+            # segments.append(Event2(START, HORZ, event.rec))
             segments.append(event.rec.y_segment)
+            horz_events[rectangle] = [
+                Event(START, rectangle.c1.y, rectangle),
+                Event(END, rectangle.c2.y, rectangle),
+            ]
         else:
+            del horz_events[rectangle]
             segments.remove(event.rec.y_segment)
 
-        height = calc_overlap(segments)
+        # print(horz_events)
+        # ih2 = horizontal_sweep(horz_events)
+        # ih = calc_overlap(segments)
+        intersect_height = horizontal(segments)
+        # print(intersect_height, ih, ih2)
         prev_x = event.point
 
     print(area)
-
-    # events = {}
-    # for rect in rects:
-    #     events.setdefault(rect.c1.y, []).append((1, rect.c1.x, rect.c2.x)) # start this interval
-    #     events.setdefault(rect.c2.y, []).append((0, rect.c1.x, rect.c2.x)) # end this interval
-    #
-    # events = sorted(events.items(), key=lambda x: x[0])
-    # area = 0
-    # intervals = [] # blist.sortedlist()
-    # last_y = events[0][0]
-    # width = 0
-    # for y, event in events:
-    #     area += width * (y - last_y)
-    #
-    #     for start, x1, x2 in event:
-    #         print(start, x1, x2)
-    #         if start:
-    #             intervals.append((x1, x2))
-    #         else:
-    #             intervals.remove((x1, x2))
-    #
-    #     width = merge_interval(intervals)
-    #     last_y = y
-    #
-    # print(area)
