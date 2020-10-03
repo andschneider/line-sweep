@@ -14,10 +14,12 @@ def test_rectange_class(rect, area):
     r = tuple_to_rect(rect)
     assert r.area == area
 
+
 def test_x_segment():
     r = tuple_to_rect(rects[1][0])
     print(r.x_segment())
     print(r.y_segment())
+
 
 def test_create_point():
     rect = rects[0][0]
