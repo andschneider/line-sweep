@@ -1,45 +1,15 @@
-# def horizontal_sweep(event_dict: Dict[Rectangle, List[Event]]):
-def horizontal_sweep(event_dict):
-    """Process events for the horizontal line sweep, calculating the length of overlapping segments."""
-    events = []
-    for r, event in event_dict.items():
-        events.extend(event)
-    # no overlap
-    if len(events) <= 2:
-        return 0
-    events.sort(key=lambda x: x.point)
-    print(events, len(events))
-    if len(events) == 6:
-        return 4
-    # sweep bottom to top
-    length = 0
-    count = 0
-    for event in events:
-        if event.typ == 0:  # START
-            # if count == 0:
-            start_y = event.point
-            count += 1
-        else:
-            count -= 1
-            if count > 0:
-                dist = event.point - start_y
-                length += dist
-    #             print(dist, length, start_y)
-    # print("total l", length)
-    return length
-
-
-def horizontal(segments):
+def horizontal_sweep(interval_heap):
     """Calculates the overlapping length of a list of segments.
 
     Deals with three cases:
 
     1) no overlap
+
        a) absolute, no overlap at all:
            |----| |----|
        b) enclosed, where there are disjoint segments inside a larger segment:
-         |---------------|
-           |----| |----|
+           |---------------|
+            |----| |----|
 
     2) enclosed overlap
        |--------|
@@ -49,46 +19,43 @@ def horizontal(segments):
        |-----|
           |------|
     """
-    if not segments:
-        return 0
+    total = 0
+    if not interval_heap:
+        return total
 
     low_inside = float("inf")
     high_inside = float("-inf")
-
-    total = 0
-    segments.sort(key=lambda x: x[0])
-    low_boundary, high_boundary = segments[0]
-    count = 1
-    for i in range(1, len(segments)):
-        low, high = segments[i]
-        plow, phigh = segments[i - 1]
+    low_boundary, high_boundary = interval_heap[0]
+    for i in range(1, len(interval_heap)):
+        cur_l, cur_h = interval_heap[i]  # current
+        prev_l, prev_h = interval_heap[i - 1]  # previous
         # no overlap
-        if low >= phigh:
+        if cur_l >= prev_h:
             print("no overlap")
-            if count > 1 and low_inside < float("inf") and high_inside > float("-inf"):
+            if i > 1 and low_inside < float("inf") and high_inside > float("-inf"):
                 # add previous inside segment
                 total += high_inside - low_inside
-                low_inside = low  # reset lowest inside so far
+                # then reset lowest inside so far
+                low_inside = cur_l
             # check upper boundary
-            if high > high_boundary:
+            if cur_h > high_boundary:
                 high_inside = high_boundary
-                high_boundary = high
+                high_boundary = cur_h
             else:
-                high_inside = high
+                high_inside = cur_h
         # overlap
         else:
-            low_inside = min(low_inside, low)
+            low_inside = min(low_inside, cur_l)
             # totally inside
-            if high <= phigh:
-                high_inside = max(high_inside, high)
+            if cur_h <= prev_h:
                 print("inside")
-            # overlap
-            elif low <= phigh < high:
-                high_inside = high_boundary
-                high_boundary = high
+                high_inside = max(high_inside, cur_h)
+            # overlap, but only in lower portion
+            elif prev_h < cur_h:
                 print("overlap")
-        count += 1
+                high_inside = high_boundary
+                high_boundary = cur_h
     # print(high_inside, low_inside)
-    if high_inside != float("-inf") and low_inside != float("inf"):
+    if low_inside < float("inf") and high_inside > float("-inf"):
         total += high_inside - low_inside
     return total
