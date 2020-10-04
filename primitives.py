@@ -22,10 +22,10 @@ class Point:
     y: float
 
 
-@dataclass
 class Rectangle:
-    c1: Point
-    c2: Point
+    def __init__(self, c1, c2):
+        self.c1: Point = c1
+        self.c2: Point = c2
 
     @property
     def x_segment(self):
