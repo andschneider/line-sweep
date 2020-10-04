@@ -28,5 +28,5 @@ def build_events(rectangles, horizontal=False):
             events.append(Event(START, r.c1.x, r))
             events.append(Event(END, r.c2.x, r))
     # sort by point
-    events.sort(key=lambda x: x.point)
+    events.sort()
     return events
