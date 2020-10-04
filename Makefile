@@ -9,4 +9,7 @@ test-solution:
 tests:
 	$(PYTHON) -m pytest tests/ -vs
 
-.PHONY: help test-solution tests
+make-plots:
+	$(PYTHON) plots.py
+
+.PHONY: help test-solution tests make-plots
