@@ -4,7 +4,8 @@ import json
 import pytest
 
 from horizontal import horizontal_sweep, horizontal_sweep2
-from main import build_rectangles, build_events
+from main import build_rectangles
+from events import build_events
 
 segs = [
     # (segments, answer)
